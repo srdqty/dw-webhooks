@@ -16,6 +16,7 @@ let
         deriving-compat = old.callHackage "deriving-compat" "0.3.6" {};
         dhall = old.callHackage "dhall" "1.14.0" {};
         dhall-json = old.callHackage "dhall-json" "1.2.0" {};
+        yesod-core = old.yesod-core_1_4_37_3;
       } // extraHaskellOverride self new old);
     };
   });

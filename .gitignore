@@ -1,4 +1,5 @@
 config.dhall
+client_session_key.aes
 
 # vim
 *.swp

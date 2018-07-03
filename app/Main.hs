@@ -1,22 +1,31 @@
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE OverloadedStrings     #-}
+{-# LANGUAGE QuasiQuotes           #-}
+{-# LANGUAGE TemplateHaskell       #-}
+{-# LANGUAGE TypeFamilies          #-}
 
 module Main where
 
-import Data.Coerce (coerce)
-import Data.Text (Text, unpack)
-import DWWebhooks.Config
-import Jenkins.Rest
+import Data.Text (Text)
+import Network.Wai.Handler.Warp (run)
+import Yesod.Core
+    (RenderRoute (..)
+    , Yesod
+    , mkYesod
+    , parseRoutes
+    , toWaiApp
+    )
 
-buildJob :: Text -> [(Text,Maybe Text)] -> Method 'Complete f
-buildJob jobName ps =
-    view "data-warehouse" -/- job jobName -/- "buildWithParameters" -?- query ps
+data DWWebhooks = DWWebhooks
+
+mkYesod "DWWebhooks" [parseRoutes|
+    / RootR GET
+|]
+
+instance Yesod DWWebhooks
+
+getRootR :: Handler Text
+getRootR = pure "Hello, world!"
 
 main :: IO ()
-main = do
-    (Config _ _ jhu jau jak) <- loadConfig "./config.dhall"
-    let master = Master (unpack $ coerce jhu) (coerce jau) (coerce jak)
-
-    x <- run master $ post_ $
-        buildJob "typecheck-pdt-config-files" [("branch", Just "master")]
-    print x
+main = run 3000 =<< toWaiApp DWWebhooks
