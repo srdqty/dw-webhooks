@@ -2,4 +2,4 @@
 
 set -eu
 
-nix-shell --pure nix/development.nix --run "runhaskell -isrc -itest test/Spec.hs"
+nix-shell --pure nix/development.nix --run "runhaskell -Wall -isrc -itest test/Spec.hs"

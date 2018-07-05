@@ -22,6 +22,8 @@ in
       pkgs.dhall
     ];
 
+    PROJECT_ROOT=project-root;
+
     shellHook = old.shellHook + builtins.readFile ./bash-prompt.sh + ''
       source ${pkgs.git.out}/etc/bash_completion.d/git-prompt.sh
       source ${pkgs.git.out}/etc/bash_completion.d/git-completion.bash
