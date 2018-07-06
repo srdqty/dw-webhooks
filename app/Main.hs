@@ -6,6 +6,12 @@
 
 module Main where
 
+import Control.Monad (unless)
+import qualified Data.ByteString as BS (ByteString, drop)
+import qualified Data.ByteString.Lazy as BL (fromChunks, toStrict)
+import Data.Conduit (runConduit, (.|))
+import Data.Conduit.List (consume)
+import Data.Coerce (coerce)
 import Data.Text (Text)
 import Network.Wai.Handler.Warp (run)
 import Yesod.Core
@@ -14,11 +20,14 @@ import Yesod.Core
     , mkYesod
     , parseRoutes
     , toWaiApp
-    , requireJsonBody
-    , sendStatusJSON
+    , lookupHeader
+    , sendResponseStatus
+    , notFound
+    , rawRequestBody
+    , MonadHandler
     )
-import Data.Aeson (Value)
 import Network.HTTP.Types.Status (status201)
+import DWWebhooks.GitHub
 
 data DWWebhooks = DWWebhooks
 
@@ -31,10 +40,34 @@ instance Yesod DWWebhooks
 getRootR :: Handler Text
 getRootR = pure "Hello, world!"
 
-postRootR :: Handler Text
+requestBody :: MonadHandler m => m BS.ByteString
+requestBody = fmap
+    (BL.toStrict . BL.fromChunks)
+    (runConduit $ rawRequestBody .| consume)
+
+validateGitHubSignature :: BS.ByteString -> Handler ()
+validateGitHubSignature payload = do
+    signature <- getSignature
+    unless (isSignatureValid secret (coerce payload) signature)
+        notFound
+    where
+        secret :: SecretToken
+        secret = SecretToken "secret"
+
+        getSignature :: Handler ProvidedSignature
+        getSignature = do
+            maybeSignature <- lookupHeader "X-Hub-Signature"
+            case maybeSignature of
+                Nothing -> notFound
+                -- drop the sha1= prefix
+                Just signature -> return (coerce (BS.drop 5 signature))
+
+
+postRootR :: Handler ()
 postRootR = do
-    v <- requireJsonBody :: Handler Value
-    sendStatusJSON status201 v
+    payload <- requestBody
+    validateGitHubSignature payload
+    sendResponseStatus status201 ()
 
 main :: IO ()
 main = run 3000 =<< toWaiApp DWWebhooks

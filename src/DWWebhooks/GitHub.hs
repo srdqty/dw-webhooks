@@ -46,6 +46,7 @@ import Data.Aeson
     )
 import Data.ByteArray (ByteArrayAccess, constEq)
 import Data.ByteString (ByteString)
+import qualified Data.ByteString.Lazy as BL (ByteString)
 import Data.ByteString.Char8 (pack)
 import Data.Text (Text)
 import GHC.Generics (Generic)
