@@ -6,6 +6,7 @@ import Data.Aeson (eitherDecode, encode)
 
 import Test.Hspec
     ( Spec
+    , context
     , describe
     , hspec
     , it
@@ -26,6 +27,7 @@ spec = do
     repoOwnerSpec
     repoNameSpec
     pullRequestEventSpec
+    isSignatureValidSpec
 
 pullRequestActionSpec :: Spec
 pullRequestActionSpec = describe "PullRequestAction" $ do
@@ -103,3 +105,28 @@ pullRequestEventSpec = describe "PullRequestEvent" $
             (CommitSha "34c5c7793cb3b279e22454cb6750c80560547b3a")
             (RepoOwner "Codertocat")
             (RepoName "Hello-World")
+
+isSignatureValidSpec :: Spec
+isSignatureValidSpec = describe "isSignatureValid" $ do
+    context "valid signature" $
+        it "should return True" $
+            isSignatureValid secret payload validSignature `shouldBe` True
+
+    context "invalid signature" $
+        it "should return False" $
+            isSignatureValid secret payload invalidSignature `shouldBe` False
+
+    where
+        validSignature :: ProvidedSignature
+        validSignature = ProvidedSignature
+            "0b3e77ccaabfc24a6939c8d47c08a608f3817f53"
+
+        invalidSignature :: ProvidedSignature
+        invalidSignature = ProvidedSignature
+            "0b3e66666666664a6939c8d47c08a608f3817f53"
+
+        secret :: SecretToken
+        secret = SecretToken "secret"
+
+        payload :: Payload
+        payload = Payload "something or other"

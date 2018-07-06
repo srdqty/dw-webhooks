@@ -20,8 +20,16 @@ module DWWebhooks.GitHub
     , RepoOwner (RepoOwner)
     , RepoName (RepoName)
     , PullRequestEvent (PullRequestEvent)
+
+    , SecretToken (SecretToken)
+    , Payload (Payload)
+    , ProvidedSignature (ProvidedSignature)
+
+    , isSignatureValid
     ) where
 
+import Crypto.Hash.Algorithms (SHA1)
+import Crypto.MAC.HMAC (HMAC, hmacGetDigest, hmac)
 import Data.Aeson
     ( FromJSON (parseJSON)
     , ToJSON (toJSON, toEncoding)
@@ -36,6 +44,9 @@ import Data.Aeson
 
     , (.:)
     )
+import Data.ByteArray (ByteArrayAccess, constEq)
+import Data.ByteString (ByteString)
+import Data.ByteString.Char8 (pack)
 import Data.Text (Text)
 import GHC.Generics (Generic)
 
@@ -94,3 +105,20 @@ instance FromJSON PullRequestEvent where
         owner <- repo .: "owner"
         ownerName <- owner .: "login"
         return (PullRequestEvent action branch sha ownerName repoName)
+
+newtype SecretToken = SecretToken ByteString
+    deriving (Eq, Ord, Show, ByteArrayAccess)
+
+newtype Payload = Payload ByteString
+    deriving (Eq, Ord, Show, ByteArrayAccess)
+
+newtype ProvidedSignature = ProvidedSignature ByteString
+    deriving (Eq, Ord, Show, ByteArrayAccess)
+
+calcSignature :: SecretToken -> Payload -> HMAC SHA1
+calcSignature = hmac
+
+isSignatureValid :: SecretToken -> Payload -> ProvidedSignature -> Bool
+isSignatureValid secret payload providedSignature =
+    constEq providedSignature digest where
+        digest = pack $ show $ hmacGetDigest $ calcSignature secret payload
