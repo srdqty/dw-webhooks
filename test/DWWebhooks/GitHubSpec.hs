@@ -10,10 +10,9 @@ import Test.Hspec
     , hspec
     , it
     , shouldBe
-    , xit
     )
 
-import SpecUtil (loadDataFile)
+import SpecUtil (loadLazyDataFile)
 import DWWebhooks.GitHub
 
 main :: IO ()
@@ -26,10 +25,34 @@ spec = do
     commitShaSpec
     repoOwnerSpec
     repoNameSpec
-    pullRequestSpec
+    pullRequestEventSpec
 
 pullRequestActionSpec :: Spec
-pullRequestActionSpec = undefined
+pullRequestActionSpec = describe "PullRequestAction" $ do
+    describe "FromJSON" $
+        it "should decode JSON successfully" $ do
+            eitherDecode "\"assigned\"" `shouldBe` Right Assigned
+            eitherDecode "\"unassigned\"" `shouldBe` Right Unassigned
+            eitherDecode "\"review_requested\"" `shouldBe` Right ReviewRequested
+            eitherDecode "\"review_request_removed\"" `shouldBe` Right ReviewRequestRemoved
+            eitherDecode "\"labeled\"" `shouldBe` Right Labeled
+            eitherDecode "\"unlabeled\"" `shouldBe` Right Unlabeled
+            eitherDecode "\"opened\"" `shouldBe` Right Opened
+            eitherDecode "\"edited\"" `shouldBe` Right Edited
+            eitherDecode "\"closed\"" `shouldBe` Right Closed
+            eitherDecode "\"reopened\"" `shouldBe` Right Reopened
+    describe "ToJSON" $
+        it "should encode JSON successfully" $ do
+            encode Assigned `shouldBe` "\"assigned\""
+            encode Unassigned `shouldBe` "\"unassigned\""
+            encode ReviewRequested `shouldBe` "\"review_requested\""
+            encode ReviewRequestRemoved `shouldBe` "\"review_request_removed\""
+            encode Labeled `shouldBe` "\"labeled\""
+            encode Unlabeled `shouldBe` "\"unlabeled\""
+            encode Opened `shouldBe` "\"opened\""
+            encode Edited `shouldBe` "\"edited\""
+            encode Closed `shouldBe` "\"closed\""
+            encode Reopened `shouldBe` "\"reopened\""
 
 branchNameSpec :: Spec
 branchNameSpec = describe "BranchName" $ do
@@ -67,11 +90,16 @@ repoNameSpec = describe "RepoName" $ do
         it "should encode JSON successfully" $
             encode (RepoName "repo") `shouldBe` "\"repo\""
 
-pullRequestSpec :: Spec
-pullRequestSpec = describe "PullRequest" $ do
+pullRequestEventSpec :: Spec
+pullRequestEventSpec = describe "PullRequestEvent" $
     describe "FromJSON" $
-        xit "should parse expected JSON input" $ do
-            jsonData <- loadDataFile "GitHub/pullrequestevent.json"
-            True `shouldBe` False
-    describe "ToJSON" $
-        xit "whatever" $ True `shouldBe` True
+        it "should decode JSON successfully" $ do
+            jsonData <- loadLazyDataFile "GitHub/pullrequestevent.json"
+            eitherDecode jsonData `shouldBe` Right event
+    where
+        event = PullRequestEvent
+            Closed
+            (BranchName "changes")
+            (CommitSha "34c5c7793cb3b279e22454cb6750c80560547b3a")
+            (RepoOwner "Codertocat")
+            (RepoName "Hello-World")
