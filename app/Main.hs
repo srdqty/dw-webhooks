@@ -5,26 +5,19 @@
 
 module Main where
 
-import Control.Monad (unless)
 import Control.Monad.IO.Class (MonadIO)
 import Control.Monad.Reader (runReaderT, lift)
 import Control.Monad.Reader.Class (MonadReader (ask))
-import qualified Data.ByteString as BS (ByteString, drop)
 import qualified Data.ByteString.Lazy as BL (toStrict)
 import Data.Coerce (coerce)
-import qualified Data.Text as T (Text, drop)
-import Data.Text.Encoding (encodeUtf8)
-import qualified Data.Text.Lazy as TL (Text, toStrict)
-import Network.Wai.Handler.Warp (run)
+import qualified Data.Text.Lazy as TL (Text)
 import Network.HTTP.Types.Status (status201, status404)
 import DWWebhooks.GitHub
 import Web.Scotty.Trans
     ( ActionT
-    , ScottyError
     , scottyT
     , body
     , get
-    , header
     , post
     , status
     , text
@@ -40,16 +33,10 @@ postAction :: (MonadIO m, MonadReader Config m)
 postAction = do
     (Config secret) <- lift ask
     b <- BL.toStrict <$> body
-    maybeSignature <- getSignature
-    isValid <- case maybeSignature of
-        Nothing -> return False
-        Just x -> return (isSignatureValid secret (coerce b) x)
-    status (if isValid then status201 else status404)
-    where
-        getSignature = do
-            signature <- header "X-Hub-Signature"
-            -- drop the sha1= prefix
-            return (coerce . encodeUtf8 . T.drop 5 . TL.toStrict <$> signature)
+    validation <- validateGitHubSignature secret (coerce b)
+    case validation of
+        Invalid -> status status404
+        Valid -> status status201
 
 main :: IO ()
 main = scottyT 3000 (`runReaderT` config) $ do
