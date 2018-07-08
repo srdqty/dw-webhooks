@@ -1,16 +1,20 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 module DWWebhooks.Jenkins
     ( JobName (JobName)
     , ParamName (ParamName)
     , ParamValue (ParamValue)
 
-    , JenkinsHostURL (JenkinsHostURL)
-    , JenkinsAPIUsername (JenkinsAPIUsername)
-    , JenkinsAPIKey (JenkinsAPIKey)
+    , HostURL (HostURL)
+    , APIUsername (APIUsername)
+    , APIKey (APIKey)
 
     , JenkinsException (JenkinsHttpException)
+
+    , Master
 
     , mkMaster
     , buildDWJob
@@ -20,6 +24,8 @@ import Data.Coerce (coerce)
 
 import Data.ByteString.Lazy (ByteString)
 import Data.Text (Text, unpack)
+import GHC.Generics (Generic)
+import Dhall (Interpret)
 import Jenkins.Rest
     ( Master (Master)
     , Method
@@ -36,11 +42,17 @@ import Jenkins.Rest
     , (-?-)
     )
 
-import DWWebhooks.Config
-    ( JenkinsHostURL (JenkinsHostURL)
-    , JenkinsAPIUsername (JenkinsAPIUsername)
-    , JenkinsAPIKey (JenkinsAPIKey)
-    )
+newtype HostURL = HostURL Text
+    deriving (Eq, Ord, Show, Generic, Interpret)
+
+newtype APIUsername = APIUsername Text
+    deriving (Eq, Ord, Show, Generic, Interpret)
+
+newtype APIKey = APIKey Text
+    deriving (Eq, Ord, Show, Generic, Interpret)
+
+mkMaster :: HostURL -> APIUsername -> APIKey -> Master
+mkMaster url name key = Master (unpack $ coerce url) (coerce name) (coerce key)
 
 newtype JobName = JobName Text
     deriving (Eq, Ord, Show)
@@ -52,9 +64,6 @@ newtype ParamValue = ParamValue Text
     deriving (Eq, Ord, Show)
 
 type Params = [(ParamName, ParamValue)]
-
-mkMaster :: JenkinsHostURL -> JenkinsAPIUsername -> JenkinsAPIKey -> Master
-mkMaster url name key = Master (unpack $ coerce url) (coerce name) (coerce key)
 
 buildDWJob :: Master
            -> JobName

@@ -1,44 +1,23 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE OverloadedStrings     #-}
-{-# LANGUAGE TypeFamilies          #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE FlexibleContexts #-}
 
 module Main where
 
-import Control.Monad.IO.Class (MonadIO)
-import Control.Monad.Reader (runReaderT, lift)
-import Control.Monad.Reader.Class (MonadReader (ask))
-import qualified Data.ByteString.Lazy as BL (toStrict)
-import Data.Coerce (coerce)
-import qualified Data.Text.Lazy as TL (Text)
-import Network.HTTP.Types.Status (status201, status404)
-import DWWebhooks.GitHub
-import Web.Scotty.Trans
-    ( ActionT
-    , scottyT
-    , body
-    , get
-    , post
-    , status
-    , text
-    )
+import Control.Monad.Reader (ReaderT, runReaderT)
+import Data.Text.Lazy (Text)
+import Web.Scotty.Trans (ScottyT, scottyT)
+import System.Environment (getEnv)
 
-newtype Config = Config SecretToken
+import qualified DWWebhooks.Config as C (loadConfig)
+import qualified DWWebhooks.AppData as A (AppData, mkAppData)
+import qualified DWWebhooks.Routes as R (routes)
 
-config :: Config
-config = Config (SecretToken "secret")
-
-postAction :: (MonadIO m, MonadReader Config m)
-          => ActionT TL.Text m ()
-postAction = do
-    (Config secret) <- lift ask
-    b <- BL.toStrict <$> body
-    validation <- validateGitHubSignature secret (coerce b)
-    case validation of
-        Invalid -> status status404
-        Valid -> status status201
+runApp :: A.AppData -> ScottyT Text (ReaderT A.AppData IO) () -> IO ()
+runApp appData = scottyT 3000 (`runReaderT` appData)
 
 main :: IO ()
-main = scottyT 3000 (`runReaderT` config) $ do
-    get "/" $ text "Hello, world!"
-    post "/" postAction
+main = do
+    configPath <- getEnv "DW_WEBHOOKS_CONFIG_FILE"
+    appData <- A.mkAppData <$> C.loadConfig configPath
+    runApp appData R.routes

@@ -17,5 +17,5 @@ loadStrictDataFile = readTestFile BS.readFile
 
 readTestFile :: (FilePath -> IO a) -> FilePath -> IO a
 readTestFile f path = do
-    prefixPath <- getEnv "PROJECT_ROOT"
+    prefixPath <- getEnv "DW_WEBHOOKS_PROJECT_ROOT"
     f (prefixPath <> "/test/data/" <> path)

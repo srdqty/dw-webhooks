@@ -22,7 +22,8 @@ in
       pkgs.dhall
     ];
 
-    PROJECT_ROOT=project-root;
+    DW_WEBHOOKS_PROJECT_ROOT=project-root;
+    DW_WEBHOOKS_CONFIG_FILE="${project-root}/config.dhall";
 
     shellHook = old.shellHook + builtins.readFile ./bash-prompt.sh + ''
       source ${pkgs.git.out}/etc/bash_completion.d/git-prompt.sh

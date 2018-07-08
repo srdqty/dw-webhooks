@@ -27,7 +27,7 @@ spec = do
     repoOwnerSpec
     repoNameSpec
     pullRequestEventSpec
-    isSignatureValidSpec
+--    isSignatureValidSpec
 
 pullRequestActionSpec :: Spec
 pullRequestActionSpec = describe "PullRequestAction" $ do
@@ -106,6 +106,7 @@ pullRequestEventSpec = describe "PullRequestEvent" $
             (RepoOwner "Codertocat")
             (RepoName "Hello-World")
 
+{-
 isSignatureValidSpec :: Spec
 isSignatureValidSpec = describe "isSignatureValid" $ do
     context "valid signature" $
@@ -130,3 +131,4 @@ isSignatureValidSpec = describe "isSignatureValid" $ do
 
         payload :: Payload
         payload = Payload "something or other"
+-}

@@ -28,7 +28,7 @@ module DWWebhooks.GitHub
     , validateGitHubSignature
     ) where
 
-import Control.Monad.IO.Class (MonadIO)
+import Control.Monad.IO.Class (MonadIO, liftIO)
 import Crypto.Hash.Algorithms (SHA1)
 import Crypto.MAC.HMAC (HMAC, hmacGetDigest, hmac)
 import Data.Aeson
@@ -53,6 +53,7 @@ import Data.Coerce (coerce)
 import qualified Data.Text as TS (Text, drop)
 import Data.Text.Encoding (encodeUtf8)
 import qualified Data.Text.Lazy as TL (toStrict)
+import Dhall (Interpret (autoWith), strictText)
 import GHC.Generics (Generic)
 import Web.Scotty.Trans
     ( ActionT
@@ -117,7 +118,10 @@ instance FromJSON PullRequestEvent where
         return (PullRequestEvent action branch sha ownerName repoName)
 
 newtype SecretToken = SecretToken ByteString
-    deriving (Eq, Ord, Show, ByteArrayAccess)
+    deriving (Eq, Ord, Show, ByteArrayAccess, Generic)
+
+instance Interpret SecretToken where
+    autoWith _ = coerce . encodeUtf8 <$> strictText
 
 newtype Payload = Payload ByteString
     deriving (Eq, Ord, Show, ByteArrayAccess)
