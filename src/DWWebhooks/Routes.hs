@@ -13,10 +13,10 @@ import Web.Scotty.Trans
     , text
     )
 
-import qualified DWWebhooks.Actions.TypeCheckPDTConfigFiles as TCPCF (action)
+import qualified DWWebhooks.Actions.DatapipelineConfig as DPC (action)
 import  DWWebhooks.AppData (AppData)
 
 routes :: (MonadIO m, MonadReader AppData m, ScottyError e) => ScottyT e m ()
 routes = do
     get "/" $ text "Hello, world!"
-    post "/hooks/type-check-pdt-config-files" TCPCF.action
+    post "/hooks/datapipeline-config" DPC.action
